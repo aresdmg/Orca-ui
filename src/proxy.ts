@@ -5,7 +5,7 @@ export function proxy(request: NextRequest) {
     const path = request.nextUrl.pathname
 
     const isPublic = path === "/" || path === "/auth/sign-in";
-    const token = request.cookies.get("orca_session_token")?.value || ""
+    const token = request.cookies.get("orca_access_token")?.value || ""
 
     if (isPublic && token) {
         return NextResponse.redirect(new URL("/console", request.nextUrl))
