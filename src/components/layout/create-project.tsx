@@ -6,19 +6,48 @@ import { Label } from "../ui/label"
 import { Switch } from "../ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "../ui/input"
-import axios from "axios"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import api from "@/lib/api"
+import { Repository } from "@/types/repository.types"
+import { Lock } from "lucide-react"
+import { Controller, useForm } from "react-hook-form"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
 
 interface ICreateProject {
     onClose: () => void
 }
 
+export const createProjectSchema = z.object({
+    name: z.string().min(3, "Project name is required").max(50, "Project name is too long"),
+    plan: z.enum(["free", "pro"]),
+    repository: z.string().min(1, "Select a repository"),
+    isPrivate: z.boolean(),
+})
+
+export type CreateProjectFormData = z.infer<typeof createProjectSchema>
+
 export default function CreateProject({ onClose }: ICreateProject) {
+    const { register, handleSubmit, reset, formState: { errors }, control } = useForm<CreateProjectFormData>({
+        resolver: zodResolver(createProjectSchema),
+        mode: "onChange",
+    })
+    const [repos, setRepos] = useState<Repository[]>([])
 
     const getUserRepos = async () => {
-        const res = await api.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users/repos`)
-        console.log(res);
+        try {
+            const res = await api.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/user/repos`, { withCredentials: true })
+            console.log(res);
+            if (res.status === 200) {
+                setRepos(res.data?.repositories)
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    const handlePostProjectData = (data: CreateProjectFormData) => {
+        console.log(data);
     }
 
     useEffect(() => {
@@ -44,35 +73,71 @@ export default function CreateProject({ onClose }: ICreateProject) {
                             Create your project
                         </h1>
                     </div>
-                    <form className="w-full flex justify-center items-center flex-col mt-3 space-y-2.5">
+                    <form onSubmit={handleSubmit(handlePostProjectData)} className="w-full flex justify-center items-center flex-col mt-3 space-y-2.5">
                         <div className="w-full space-y-2">
                             <Label htmlFor="name">Project Name</Label>
-                            <Input id="name" placeholder="e.g. SaaS Dashboard" autoComplete="off" className="focus-visible:ring-emerald-500" />
+                            <Input id="name" placeholder="e.g. SaaS Dashboard" autoComplete="off" className="focus-visible:ring-emerald-500" {...register("name")} />
+                            {errors.name && (
+                                <p className="text-red-400 text-sm">
+                                    {errors.name.message}
+                                </p>
+                            )}
                         </div>
 
                         <div className="w-full space-y-2">
                             <Label>Plan</Label>
-                            <Select defaultValue="free" >
-                                <SelectTrigger className="w-full" >
-                                    <SelectValue placeholder="Select a plan" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="free">Free - $0/month</SelectItem>
-                                    <SelectItem value="pro">Pro - $39/month</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Controller control={control} name="plan" defaultValue="free" render={({ field }) => (
+                                <Select onValueChange={field.onChange} value={field.value} >
+                                    <SelectTrigger className="w-full" >
+                                        <SelectValue placeholder="Select a plan" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="free">Free - $0/month</SelectItem>
+                                        <SelectItem value="pro">Pro - $39/month</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )} />
+                            {errors.plan && (
+                                <p className="text-red-500 text-sm">
+                                    {errors.plan.message}
+                                </p>
+                            )}
                         </div>
 
                         <div className="w-full space-y-2">
                             <Label>Repository</Label>
-                            <Select>
-                                <SelectTrigger className="w-full" >
-                                    <SelectValue placeholder="Select a repository" />
-                                </SelectTrigger>
-                                <SelectContent>
-
-                                </SelectContent>
-                            </Select>
+                            <Controller control={control} name="repository" render={({ field }) => (
+                                <Select value={field.value} onValueChange={field.onChange} >
+                                    <SelectTrigger className="w-full" >
+                                        <SelectValue placeholder="Select a repository" />
+                                    </SelectTrigger>
+                                    <SelectContent className="w-full">
+                                        {repos.map((r) => (
+                                            <SelectItem key={r.id} value={r.html_url} className="w-full" >
+                                                <div className="flex justify-start items-center space-x-2" >
+                                                    <p>
+                                                        {r.full_name}
+                                                    </p>
+                                                    <p>
+                                                        {
+                                                            r.private ?
+                                                                <span>
+                                                                    <Lock size={12} className="text-zinc-500" />
+                                                                </span>
+                                                                : null
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )} />
+                            {errors.repository && (
+                                <p className="text-red-500 text-sm">
+                                    {errors.repository.message}
+                                </p>
+                            )}
                         </div>
 
                         <div className="w-full space-y-2 flex items-center justify-between border border-zinc-800 rounded-md p-3">
@@ -82,7 +147,14 @@ export default function CreateProject({ onClose }: ICreateProject) {
                                     Only invited members can access this project
                                 </p>
                             </div>
-                            <Switch />
+                            <Controller control={control} name="isPrivate" render={({ field }) => (
+                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                            )} />
+                            {errors.isPrivate && (
+                                <p className="text-red-500 text-sm">
+                                    {errors.isPrivate.message}
+                                </p>
+                            )}
                         </div>
 
                         <div className="w-full flex justify-end items-center space-x-2.5 ">
