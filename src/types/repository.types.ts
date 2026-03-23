@@ -8,3 +8,10 @@ export interface Repository {
     html_url: string
 }
 
+export interface Project {
+    id: string,
+    name: string,
+    fullName: string,
+    isPrivate: string,
+    plan: string
+}
