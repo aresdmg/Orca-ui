@@ -13,6 +13,8 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { Textarea } from "../ui/textarea"
 
 interface ICreateProject {
     onClose: () => void
@@ -24,11 +26,15 @@ export const createProjectSchema = z.object({
     isPrivate: z.boolean(),
     plan: z.enum(["free", "pro"]),
     repoUrl: z.string().min(1, "Select a repository"),
+    cloneUrl: z.string().min(1),
+    language: z.string().min(1)
 })
 
 export type CreateProjectFormData = z.infer<typeof createProjectSchema>
 
 export default function CreateProject({ onClose }: ICreateProject) {
+    const [env, setEnv] = useState("")
+    const router = useRouter()
     const { handleSubmit, reset, formState: { errors }, control, setValue } = useForm<CreateProjectFormData>({
         resolver: zodResolver(createProjectSchema),
         mode: "onChange",
@@ -48,10 +54,12 @@ export default function CreateProject({ onClose }: ICreateProject) {
 
     const handlePostProjectData = async (data: CreateProjectFormData) => {
         try {
-            const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/projects/create`, { ...data }, { withCredentials: true })
+            const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/projects/create`, { ...data, env }, { withCredentials: true })
             if (res.status === 201) {
                 toast.success("Project created")
             }
+            const id = res.data?.id
+            router.push(`/console/${id}`)
         } catch (error) {
             console.log(error)
         } finally {
@@ -95,6 +103,8 @@ export default function CreateProject({ onClose }: ICreateProject) {
                                         setValue("name", selectedRepo.name)
                                         setValue("fullName", selectedRepo.full_name)
                                         setValue("isPrivate", selectedRepo.private)
+                                        setValue("cloneUrl", selectedRepo.clone_url)
+                                        setValue("language", selectedRepo.language)
                                     }
                                 }}>
                                     <SelectTrigger className="w-full" >
@@ -131,7 +141,7 @@ export default function CreateProject({ onClose }: ICreateProject) {
 
                         <div className="w-full space-y-2">
                             <Label>Plan</Label>
-                            <Controller control={control} name="plan" defaultValue="free" render={({ field }) => (
+                            <Controller control={control} name="plan" render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value} >
                                     <SelectTrigger className="w-full" >
                                         <SelectValue placeholder="Select a plan" />
@@ -147,6 +157,13 @@ export default function CreateProject({ onClose }: ICreateProject) {
                                     {errors.plan.message}
                                 </p>
                             )}
+                        </div>
+
+                        <div className="w-full space-y-2 mt-2">
+                            <Label>Enviornment variables</Label>
+                            <Textarea value={env} onChange={(e) => setEnv(e.target.value)} className="w-full h-40 font-mono" placeholder={`KEY_1=VALUE_1
+KEY_2=VALUE_2
+KEY_3=VALUE_3`} />
                         </div>
 
                         <div className="w-full flex justify-end items-center space-x-2.5 ">

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Project } from "@/types/repository.types";
 import axios, { isAxiosError } from "axios";
-import { ChevronRight, EllipsisVertical, LayoutGrid, List, Menu, Plus } from "lucide-react";
+import { ChevronRight, LayoutGrid, List, Plus } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -71,12 +71,12 @@ export default function Console() {
                         </>
                     ) : (
                         projects.map((p) => (
-                            <Link href={`/console/${p.id}`} key={p.id} className="w-full bg-zinc-900/50 h-40 border-zinc-700 border rounded-lg p-4 shadow">
+                            <Link href={`/console/${p.id}`} key={p.id} className="w-full bg-zinc-900/50 hover:bg-zinc-900/60 h-40 border-zinc-700 border rounded-lg p-4 shadow">
                                 <div className="w-full flex justify-between items-center px-2" >
                                     <div className="flex justify-center items-center space-x-1.5" >
                                         <h2 className="font-semibold text-lg">{p.name}</h2>
-                                        <Badge className="rounded-sm px-1 text-xs" >
-                                            {p.plan === "FREE" ? "NANO" : "MACRO"}
+                                        <Badge className="rounded-sm px-1 text-xs text-zinc-300" >
+                                            {String(p.plan).toLowerCase() == "free" ? "NANO" : "MACRO"}
                                         </Badge>
                                     </div>
                                     <div className="cursor-pointer" >

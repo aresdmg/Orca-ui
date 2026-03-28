@@ -21,5 +21,6 @@ export const config = {
         "/",
         "/auth/sign-in",
         "/console",
+        "/console/:path"
     ],
 }
